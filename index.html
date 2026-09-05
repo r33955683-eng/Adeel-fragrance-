@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adeel Fragrance — Admin</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080808;color:#f5f1e8;font-family:Arial,sans-serif}
+header{background:#0d0d0d;border-bottom:1px solid #352b18;padding:18px 20px;position:sticky;top:0;z-index:5}
+.top{max-width:1100px;margin:auto;display:flex;justify-content:space-between;align-items:center}.logo{color:#d6b35a;font-size:22px;font-weight:800;letter-spacing:2px}
+button,.btn{border:0;border-radius:5px;padding:11px 15px;font-weight:bold;cursor:pointer}.gold{background:#d6b35a;color:#080808}.dark{background:#171717;color:#eee;border:1px solid #3a311f}
+main{max-width:1100px;margin:auto;padding:35px 18px}.tabs{display:flex;gap:10px;margin-bottom:25px;flex-wrap:wrap}.tab.active{background:#d6b35a;color:#080808}
+.panel{background:#101010;border:1px solid #2b261c;border-radius:10px;padding:22px;margin-bottom:20px}
+h1{font-size:32px}h2{margin-top:0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
+label{display:block;color:#aaa;font-size:13px;margin-bottom:6px}input,textarea,select{width:100%;padding:12px;background:#080808;border:1px solid #3a3326;color:#fff;border-radius:5px}textarea{min-height:90px;resize:vertical}
+.products{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.product{background:#0b0b0b;border:1px solid #2b261c;border-radius:8px;overflow:hidden}.product img{width:100%;height:210px;object-fit:cover}.noimg{height:210px;display:grid;place-items:center;color:#777;background:#15120c}.pbody{padding:15px}.price{color:#d6b35a;font-weight:bold}.actions{display:flex;gap:8px;margin-top:12px}.actions button{flex:1}
+.note{color:#999;font-size:13px;line-height:1.6}.status{margin-top:12px;color:#d6b35a}.hidden{display:none}
+@media(max-width:700px){.grid,.products{grid-template-columns:1fr}.top{gap:10px}.logo{font-size:17px}}
+</style>
+</head>
+<body>
+<header><div class="top"><div class="logo">ADEEL FRAGRANCE</div><button class="gold" onclick="showTab('store')">View Store</button></div></header>
+<main>
+<div class="tabs">
+<button class="tab active" id="tabDashboard" onclick="showTab('dashboard')">Dashboard</button>
+<button class="tab" id="tabProducts" onclick="showTab('products')">Products</button>
+<button class="tab" id="tabSettings" onclick="showTab('settings')">Settings</button>
+<button class="tab" id="tabStore" onclick="showTab('store')">Store Preview</button>
+</div>
+
+<section id="dashboard" class="panel">
+<h1>Dashboard</h1><p class="note">Manage your Adeel Fragrance products without editing the website code. Changes are saved in this browser.</p>
+<div class="grid"><div class="panel"><h2 id="count">0</h2><p class="note">Products</p></div><div class="panel"><h2>Black + Gold</h2><p class="note">Luxury storefront theme</p></div></div>
+</section>
+
+<section id="products" class="panel hidden">
+<h2>Products</h2>
+<button class="gold" onclick="newProduct()">+ Add Product</button>
+<div id="productList" class="products" style="margin-top:18px"></div>
+</section>
+
+<section id="editor" class="panel hidden">
+<h2 id="editorTitle">Add Product</h2>
+<div class="grid">
+<div><label>Product Name</label><input id="name" placeholder="Baccarat Rouge"></div>
+<div><label>Price</label><input id="price" placeholder="Rs. 2,499"></div>
+<div><label>Category</label><select id="category"><option>Men</option><option>Women</option><option>Unisex</option></select></div>
+<div><label>Notes</label><input id="notes" placeholder="Amber • Floral • Warm"></div>
+</div>
+<div style="margin-top:15px"><label>Product Photo</label><input id="photo" type="file" accept="image/*"><p class="note">Choose a JPG/PNG from your phone. The image is stored in this browser for this demo.</p></div>
+<div style="display:flex;gap:10px;margin-top:18px"><button class="gold" onclick="saveProduct()">Save Product</button><button class="dark" onclick="showTab('products')">Cancel</button></div>
+<div id="editorStatus" class="status"></div>
+</section>
+
+<section id="settings" class="panel hidden">
+<h2>Settings</h2><label>WhatsApp Number</label><input id="wa" placeholder="923001234567">
+<p class="note">Use country code without + or spaces. Example: 923001234567</p>
+<button class="gold" onclick="saveSettings()">Save Settings</button><div id="settingsStatus" class="status"></div>
+</section>
+
+<section id="store" class="hidden">
+<div class="panel" style="text-align:center"><div class="note">STORE PREVIEW</div><h1>Leave a <span style="color:#d6b35a">Lasting</span> Impression.</h1><p class="note">Your products appear below.</p></div>
+<div id="storeProducts" class="products"></div>
+</section>
+</main>
+<script>
+const KEY="adeel_products_v1", WAKEY="adeel_wa_v1";
+let products=JSON.parse(localStorage.getItem(KEY)||"[]");
+let editing=-1;
+let wa=localStorage.getItem(WAKEY)||"923000000000";
+document.getElementById("wa").value=wa;
+
+function saveAll(){localStorage.setItem(KEY,JSON.stringify(products))}
+function showTab(id){
+["dashboard","products","editor","settings","store"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id));
+document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+let b=document.getElementById("tab"+id.charAt(0).toUpperCase()+id.slice(1)); if(b)b.classList.add("active");
+render(); window.scrollTo({top:0,behavior:"smooth"});
+}
+function render(){
+document.getElementById("count").textContent=products.length;
+document.getElementById("productList").innerHTML=products.map((p,i)=>`
+<article class="product">${p.image?`<img src="${p.image}" alt="">`:`<div class="noimg">No Photo</div>`}
+<div class="pbody"><h3>${esc(p.name)}</h3><p class="note">${esc(p.category)} • ${esc(p.notes)}</p><div class="price">${esc(p.price)}</div>
+<div class="actions"><button class="dark" onclick="editProduct(${i})">Edit</button><button class="dark" onclick="deleteProduct(${i})">Delete</button></div></div></article>`).join("");
+document.getElementById("storeProducts").innerHTML=products.map((p,i)=>`
+<article class="product">${p.image?`<img src="${p.image}" alt="">`:`<div class="noimg">No Photo</div>`}<div class="pbody"><h3>${esc(p.name)}</h3><p class="note">${esc(p.category)} • ${esc(p.notes)}</p><div class="price">${esc(p.price)}</div><div class="actions"><button class="gold" onclick="order(${i})">Order on WhatsApp</button></div></div></article>`).join("");
+}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function newProduct(){editing=-1;document.getElementById("editorTitle").textContent="Add Product";["name","price","notes"].forEach(x=>document.getElementById(x).value="");document.getElementById("category").value="Men";document.getElementById("photo").value="";showTab("editor")}
+function editProduct(i){editing=i;let p=products[i];document.getElementById("editorTitle").textContent="Edit Product";document.getElementById("name").value=p.name;document.getElementById("price").value=p.price;document.getElementById("notes").value=p.notes;document.getElementById("category").value=p.category;document.getElementById("photo").value="";showTab("editor")}
+function saveProduct(){
+let file=document.getElementById("photo").files[0];
+let p={name:document.getElementById("name").value.trim(),price:document.getElementById("price").value.trim(),notes:document.getElementById("notes").value.trim(),category:document.getElementById("category").value,image:editing>=0?products[editing].image:""};
+if(!p.name||!p.price){document.getElementById("editorStatus").textContent="Please enter product name and price.";return}
+const finish=()=>{if(editing<0)products.push(p);else products[editing]=p;saveAll();document.getElementById("editorStatus").textContent="Saved!";setTimeout(()=>showTab("products"),500)};
+if(file){let r=new FileReader();r.onload=()=>{p.image=r.result;finish()};r.readAsDataURL(file)}else finish();
+}
+function deleteProduct(i){if(confirm("Delete this product?")){products.splice(i,1);saveAll();render()}}
+function saveSettings(){wa=document.getElementById("wa").value.replace(/\D/g,"");localStorage.setItem(WAKEY,wa);document.getElementById("settingsStatus").textContent="WhatsApp number saved."}
+function order(i){let msg=encodeURIComponent("Hello Adeel Fragrance, I want to order "+products[i].name+" for "+products[i].price+".");window.open("https://wa.me/"+wa+"?text="+msg,"_blank")}
+if(!products.length){products=[{name:"Avent Cread",price:"Rs. 1,999",notes:"Fresh • Woody • Sophisticated",category:"Men",image:""},{name:"Baccarat Rouge",price:"Rs. 2,499",notes:"Amber • Floral • Warm",category:"Unisex",image:""},{name:"Man Wood",price:"Rs. 1,799",notes:"Woody • Fresh • Elegant",category:"Men",image:""}];saveAll()}
+render();
+</script>
+</body>
+</html>
